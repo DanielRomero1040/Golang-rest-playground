@@ -1,7 +1,7 @@
-package server
+package service
 
 import (
-	"api-rest/db"
+	db "api-rest/db-repository"
 	vault "api-rest/resources"
 	"encoding/json"
 	"fmt"
@@ -14,66 +14,8 @@ import (
 	"github.com/gorilla/sessions"
 )
 
-func index(w http.ResponseWriter, r *http.Request) {
-	if isMethodGet(w, r) {
-		fmt.Fprintf(w, "Hello world")
-	}
-}
-
-func getCountries(w http.ResponseWriter, r *http.Request) {
-
-	//validación de session
-	var store = sessions.NewCookieStore([]byte(os.Getenv("")))
-	session, _ := store.Get(r, "session-user")
-	if session.IsNew {
-		fmt.Fprintf(w, "Debes iniciar sesión para poder ver está página")
-		return
-	}
-
-	if isTokenSessionValid(session) {
-		db.DoPostgress()
-		countries2 := db.GetCountriesQuery(db.Dbp)
-		w.Header().Set("Content-type", "application/json")
-		json.NewEncoder(w).Encode(countries2)
-	}
-
-	fmt.Printf("session.Values: %v\n", session.Values)
-}
-
-func addCountry(w http.ResponseWriter, r *http.Request) {
-
-	//validación de session
-	var store = sessions.NewCookieStore([]byte(os.Getenv("")))
-	session, _ := store.Get(r, "session-user")
-	if session.IsNew {
-		fmt.Fprintf(w, "Debes iniciar sesión para poder ver está página")
-		return
-	}
-
-	db.DoPostgress()
-	country := &db.Country{} // revisar
-	err := json.NewDecoder(r.Body).Decode(country)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		fmt.Fprintf(w, "%v", err)
-		return
-	}
-	msg, err := db.AddCountryQuery(country, db.Dbp)
-	// countries = append(countries, country)
-	if err != nil {
-		fmt.Fprint(w, err.Error())
-	} else {
-		json.NewEncoder(w).Encode(country)
-		fmt.Fprint(w, msg)
-	}
-}
-
 // Loggin - TODO - cambiar nombre del metodo
-func getToken(w http.ResponseWriter, r *http.Request) {
-	if !isMethodPost(w, r) {
-		return
-	}
-
+func GetToken(w http.ResponseWriter, r *http.Request) {
 	db.DoPostgress()
 
 	user := &db.User{}
@@ -125,26 +67,6 @@ func generateSignedToken(user *db.User, date string) string {
 	}
 
 	return signedToken
-}
-
-func isMethodPost(w http.ResponseWriter, r *http.Request) bool {
-	response := true
-	if r.Method != http.MethodPost {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		fmt.Fprintf(w, "Method not allowed")
-		response = false
-	}
-	return response
-}
-
-func isMethodGet(w http.ResponseWriter, r *http.Request) bool {
-	response := true
-	if r.Method != http.MethodGet {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		fmt.Fprintf(w, "Method not allowed")
-		response = false
-	}
-	return response
 }
 
 func isTokenSessionValid(session *sessions.Session) bool {

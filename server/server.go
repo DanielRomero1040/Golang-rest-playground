@@ -1,9 +1,12 @@
 package server
 
-import "net/http"
+import (
+	"api-rest/controller"
+	"net/http"
+)
 
 func New(addr string) *http.Server {
-	initRoutes()
+	controller.InitRoutes()
 	return &http.Server{
 		Addr: addr,
 	}
