@@ -15,35 +15,13 @@ func Index(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetCountries(w http.ResponseWriter, r *http.Request) {
-
-	//validación de session
-	var store = sessions.NewCookieStore([]byte(os.Getenv("")))
-	session, _ := store.Get(r, "session-user")
-	if session.IsNew {
-		fmt.Fprintf(w, "Debes iniciar sesión para poder ver está página")
-		return
-	}
-
-	if isTokenSessionValid(session) {
-		db.DoPostgress()
-		countries2 := db.GetCountriesQuery(db.Dbp)
-		w.Header().Set("Content-type", "application/json")
-		json.NewEncoder(w).Encode(countries2)
-	}
-
-	fmt.Printf("session.Values: %v\n", session.Values)
+	db.DoPostgress()
+	countries2 := db.GetCountriesQuery(db.Dbp)
+	w.Header().Set("Content-type", "application/json")
+	json.NewEncoder(w).Encode(countries2)
 }
 
 func AddCountry(w http.ResponseWriter, r *http.Request) {
-
-	//validación de session
-	var store = sessions.NewCookieStore([]byte(os.Getenv("")))
-	session, _ := store.Get(r, "session-user")
-	if session.IsNew {
-		fmt.Fprintf(w, "Debes iniciar sesión para poder ver está página")
-		return
-	}
-
 	db.DoPostgress()
 	country := &db.Country{} // revisar
 	err := json.NewDecoder(r.Body).Decode(country)
@@ -59,5 +37,23 @@ func AddCountry(w http.ResponseWriter, r *http.Request) {
 	} else {
 		json.NewEncoder(w).Encode(country)
 		fmt.Fprint(w, msg)
+	}
+}
+
+func SessionMiddleware(f func(http.ResponseWriter, *http.Request)) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		//validación de session
+		var store = sessions.NewCookieStore([]byte(os.Getenv("")))
+		session, _ := store.Get(r, "session-user")
+		if session.IsNew {
+			fmt.Fprintf(w, "Debes iniciar sesión para poder ver está página")
+			return
+		}
+		if !isTokenSessionValid(session) {
+			fmt.Printf("session.Values: %v\n", session.Values)
+			return
+		}
+		fmt.Printf("session.Values: %v\n", session.Values)
+		f(w, r)
 	}
 }

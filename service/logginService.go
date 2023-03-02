@@ -35,7 +35,13 @@ func GetToken(w http.ResponseWriter, r *http.Request) {
 	date := time.Now().Format(time.RFC3339Nano)
 	signedToken := generateSignedToken(user, date)
 
-	db.SaveTokenQuery(signedToken, user.UserName, date, db.Dbp)
+	tokenToStorage := &db.TokenToStorage{
+		Token:    signedToken,
+		UserName: user.UserName,
+		Date:     date,
+	}
+
+	db.SaveTokenQuery(tokenToStorage, db.Dbp)
 
 	var store = sessions.NewCookieStore([]byte(os.Getenv("PROJECT_ENV")))
 	store.MaxAge(300)

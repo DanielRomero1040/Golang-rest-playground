@@ -11,15 +11,15 @@ func InitRoutes() {
 		if !isAllowedMethod(w, r, http.MethodGet) {
 			return
 		}
-		service.Index(w, r)
+		service.SessionMiddleware(service.Index)(w, r)
 	})
 
 	http.HandleFunc("/countries", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
-			service.GetCountries(w, r)
+			service.SessionMiddleware(service.GetCountries)(w, r)
 		case http.MethodPost:
-			service.AddCountry(w, r)
+			service.SessionMiddleware(service.AddCountry)(w, r)
 		default:
 			w.WriteHeader(http.StatusMethodNotAllowed)
 			fmt.Fprintf(w, "Method not allowed")
